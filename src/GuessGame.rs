@@ -18,7 +18,7 @@ fn main() {
             Ordering::Less => println!("小了"),
             Ordering::Greater => println!("大了"),
             Ordering::Equal => {
-                println!("好了");
+                println!("好了a");
                 break;
             }
         }
