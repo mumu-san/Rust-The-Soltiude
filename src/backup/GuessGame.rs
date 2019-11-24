@@ -15,10 +15,10 @@ fn main() {
             Err(_) => continue,
         };
         match guess.cmp(&secret) {
-            Ordering::Less => println!("小了"),
-            Ordering::Greater => println!("大了"),
+            Ordering::Less => println!("too small"),
+            Ordering::Greater => println!("too large"),
             Ordering::Equal => {
-                println!("好了a");
+                println!("okay");
                 break;
             }
         }
