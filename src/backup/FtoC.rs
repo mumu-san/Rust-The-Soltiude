@@ -1,7 +1,7 @@
 use std::io;
 fn main() {
     let a: f64 = input_fnumber();
-    println!("华氏{}为摄氏{}", a, f_to_c(a));
+    println!("{}℉={}℃", a, f_to_c(a));
     //println!("The Secret number is:{}", secret);
 }
 fn f_to_c(x: f64) -> f64 {
