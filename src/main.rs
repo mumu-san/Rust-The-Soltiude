@@ -1,40 +1,32 @@
-use std::io;
-fn main() {
-    let n: u32 = input_inumber();
-    fbn(n);
+#[derive(Debug)]
+struct Rect {
+    h: u32,
+    w: u32,
 }
-fn fbn(u: u32) {
-    if u <= 0 {
-        println!("Wrong Number");
-    } else if u > 47 {
-        println!("May OverFlow");
-    } else {
-        println!("fbn below:");
-        let mut p1: u32 = 1;
-        let mut p2: u32 = 0;
-        for _i in 0..u {
-            p2 = p1 + p2;
-            p1 = p2 - p1;
-            print!("{} ", p2);
-        }
+impl Rect {
+    fn create_rect_hw(height:u32,width:u32)->Rect{
+        Rect{h:height,w:width}
+    }
+    fn create_square(size:u32)->Rect{
+        Rect{h:size,w:size}
+    }
+    fn area(&self) -> u32 {
+        self.h * self.w
+    }
+    fn canhold(&self, r: &Rect) -> bool {
+        self.h >= r.h && self.w >= r.w
     }
 }
-fn input_inumber() -> u32 {
-    println!("Input a Number:");
-    let mut a = String::new();
-    match io::stdin().read_line(&mut a) {
-        Ok(_) => {
-            match a.trim().parse() {
-                Ok(n) => return n,
-                Err(_) => {
-                    println!("Not a number");
-                    return 0;
-                }
-            };
-        }
-        Err(_) => {
-            println!("Input Error");
-            return 0;
-        }
-    };
+fn main() {
+    let s = Rect { w: 4, h: 6 };
+    let s2 = Rect { w: 3, h: 5 };
+    let s3 = Rect { w: 7, h: 8 };
+    let s4=Rect::create_rect_hw(7, 9);
+    let s5=Rect::create_square(8);
+    println!("{:?}", s);
+    println!("area={}", s.area());
+    println!("canhold? {}", s.canhold(&s2));
+    println!("canhold? {}", s.canhold(&s3));
+    println!("area={}",s4.area());
+    println!("area={}",s5.area());
 }
