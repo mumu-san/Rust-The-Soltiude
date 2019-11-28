@@ -30,3 +30,9 @@ fn main() {
     println!("area={}",s4.area());
     println!("area={}",s5.area());
 }
+// Life is pretty tough these days, and what I will be 
+// as well as what I will do is still unpredictable.
+// Cannot imagine what I will think when I see these
+// again several years later, 
+// because future is full of unknown things.
+// However, keep println!("!^-^!") and do not forget Gaming!
