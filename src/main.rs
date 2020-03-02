@@ -3,7 +3,6 @@ use std::error::Error;
 use std::fs;
 fn main() {
     let args: Vec<String> = env::args().collect();
-    //println!("{:?}", args);
     if let Err(e) = run(&args[1]) {
         eprintln!("error:{}", e);
     }
@@ -12,15 +11,14 @@ fn main() {
 fn run(file: &str) -> Result<(), Box<dyn Error>> {
     let vmcode = fs::read_to_string(file)?;
     let mut asmstring = String::new();
-    //let mut count = 1;
+    let mut count = 0;
     for i in vmcode.lines() {
         let c: Vec<&str> = i.split_ascii_whitespace().collect();
         if !i.starts_with("//") {
             if c.len() > 0 {
-                translate_to_asm(c, &mut asmstring)?;
+                translate_to_asm(c, &mut asmstring, &mut count)?;
             }
         }
-        //count += 1;
     }
     let filename = match file.split(".").next() {
         Some(s) => s,
@@ -29,20 +27,23 @@ fn run(file: &str) -> Result<(), Box<dyn Error>> {
     fs::write(format!("{}.asm", filename), asmstring)?;
     Ok(())
 }
-fn translate_to_asm(c: Vec<&str>, asmstring: &mut String) -> Result<(), Box<dyn Error>> {
+fn translate_to_asm(
+    c: Vec<&str>,
+    asmstring: &mut String,
+    count: &mut i32,
+) -> Result<(), Box<dyn Error>> {
     let mut addr: i32 = 0;
     if c.len() > 1 {
         addr = c[2].parse()?;
     }
     match c[0] {
         "push" => {
-            //println!("push");
             match c[1] {
                 "constant" => {
-                    asmstring.push_str(&format!("@{}\nD=A\n@SP\nAM=M+1\nA=A-1\nM=D\n", c[2]))
+                    asmstring.push_str(&format!("@{}\nD=A\n@SP\nAM=M+1\nA=A-1\nM=D\n", addr))
                 }
                 "static" => {
-                    asmstring.push_str(&format!("@{}\nD=A\n@SP\nAM=M+1\nA=A-1\nM=D\n", 16 + addr))
+                    asmstring.push_str(&format!("@{}\nD=M\n@SP\nAM=M+1\nA=A-1\nM=D\n", 16 + addr))
                 }
                 "argument" => asmstring.push_str(&format!(
                     "@ARG\nD=M\n@{}\nA=D+A\nD=M\n@SP\nAM=M+1\nA=A-1\nM=D\n",
@@ -60,19 +61,18 @@ fn translate_to_asm(c: Vec<&str>, asmstring: &mut String) -> Result<(), Box<dyn 
                     "@THAT\nD=M\n@{}\nA=D+A\nD=M\n@SP\nAM=M+1\nA=A-1\nM=D\n",
                     addr
                 )),
+                "pointer" => {
+                    asmstring.push_str(&format!("@{}\nD=M\n@SP\nAM=M+1\nA=A-1\nM=D\n", 3 + addr))
+                }
                 "temp" => {
-                    asmstring.push_str(&format!("@{}\nD=A\n@SP\nAM=M+1\nA=A-1\nM=D\n", 5 + addr))
+                    asmstring.push_str(&format!("@{}\nD=M\n@SP\nAM=M+1\nA=A-1\nM=D\n", 5 + addr))
                 }
                 _ => (),
             };
         }
         "pop" => {
-            //println!("pop");
             match c[1] {
-                "static" => asmstring.push_str(&format!(
-                    "@{}\nD=M\n@R13\nM=D\n@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D\n",
-                    16 + addr
-                )),
+                "static" => asmstring.push_str(&format!("@SP\nAM=M-1\nD=M\n@{}\nM=D\n", 16 + addr)),
                 "argument" => asmstring.push_str(&format!(
                     "@ARG\nD=M\n@{}\nD=D+A\n@R13\nM=D\n@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D\n",
                     addr
@@ -89,22 +89,36 @@ fn translate_to_asm(c: Vec<&str>, asmstring: &mut String) -> Result<(), Box<dyn 
                     "@THAT\nD=M\n@{}\nD=D+A\n@R13\nM=D\n@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D\n",
                     addr
                 )),
-                "temp" => asmstring.push_str(&format!(
-                    "@{}\nD=M\n@R13\nM=D\n@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D\n",
-                    5 + addr
-                )),
+                "pointer" => asmstring.push_str(&format!("@SP\nAM=M-1\nD=M\n@{}\nM=D\n", 3 + addr)),
+                "temp" => asmstring.push_str(&format!("@SP\nAM=M-1\nD=M\n@{}\nM=D\n", 5 + addr)),
                 _ => (),
             };
         }
-        "add" => {
-            //println!("add");
-            asmstring.push_str(&format!("@SP\nAM=M-1\nD=M\nM=M+D\n"))
+        "add" => asmstring.push_str(&format!("@SP\nAM=M-1\nD=M\nA=A-1\nM=M+D\n")),
+        "sub" => asmstring.push_str(&format!("@SP\nAM=M-1\nD=M\nA=A-1\nM=M-D\n")),
+        "eq" => {
+            *count += 1;
+            asmstring.push_str(&format!(
+            "@SP\nAM=M-1\nD=M\nA=A-1\nD=M-D\nM=0\n@END_EQ{}\nD;JNE\n@SP\nA=M-1\nM=-1\n(END_EQ{})\n",count,count
+        ));
         }
-        "sub" => {
-            //println!("sub");
-            asmstring.push_str(&format!("@SP\nAM=M-1\nD=M\nM=M-D\n"))
+        "lt" => {
+            *count += 1;
+            asmstring.push_str(&format!(
+            "@SP\nAM=M-1\nD=M\nA=A-1\nD=M-D\nM=0\n@END_LT{}\nD;JGE\n@SP\nA=M-1\nM=-1\n(END_LT{})\n",count,count
+        ));
         }
-        _ => (),
+        "gt" => {
+            *count += 1;
+            asmstring.push_str(&format!(
+            "@SP\nAM=M-1\nD=M\nA=A-1\nD=M-D\nM=0\n@END_GT{}\nD;JLE\n@SP\nA=M-1\nM=-1\n(END_GT{})\n",count,count
+        ));
+        }
+        "and" => asmstring.push_str(&format!("@SP\nAM=M-1\nD=M\nA=A-1\nM=D&M\n")),
+        "or" => asmstring.push_str(&format!("@SP\nAM=M-1\nD=M\nA=A-1\nM=D|M\n")),
+        "not" => asmstring.push_str(&format!("@SP\nA=M-1\nM=!M\n")),
+        "neg" => asmstring.push_str(&format!("@SP\nA=M-1\nM=-M\n")),
+        _ => panic!("首位错误"),
     };
     Ok(())
 }
