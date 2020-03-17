@@ -4,8 +4,7 @@ push constant 21
 push constant 22
 pop argument 2
 pop argument 1
-push 36
-pop this
+pop this 33
 push constant 42
 push constant 45
-pop that 5pop 111
+pop that 5pop
